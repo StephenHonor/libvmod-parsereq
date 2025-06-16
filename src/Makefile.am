@@ -1,7 +1,5 @@
-INCLUDES = -I$(VARNISHSRC)/include -I$(VARNISHSRC)
-
-vmoddir = $(VMODDIR)
-
+AM_CFLAGS = $(VARNISHAPI_CFLAGS) -Wall -Werror
+AM_LDFLAGS = $(VARNISHAPI_LIBS) $(VMOD_LDFLAGS)
 
 vmod_LTLIBRARIES = libvmod_parsereq.la
 
@@ -14,8 +12,6 @@ nodist_libvmod_parsereq_la_SOURCES = \
 	vcc_parsereq_if.h
 
 dist_man_MANS = vmod_parsereq.3
-
-libvmod_parsereq_la_LDFLAGS = -module -export-dynamic -avoid-version
 
 @BUILD_VMOD_PARSEREQ@
 
