@@ -61,7 +61,7 @@ vmod_current_key(VRT_CTX, VCL_ENUM type){
 
 ///////////////////////////////////////////////////////////////
 //反復処理系
-BCL_BOOL
+VCL_BOOL
 vmod_iterate(VRT_CTX, VCL_ENUM type, VCL_STRING p){
 	return vmod_read_iterate(ctx, p,vmod_convtype(type));
 }
