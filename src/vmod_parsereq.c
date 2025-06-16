@@ -66,21 +66,16 @@ unsigned vmod_iterate(VRT_CTX, VCL_ENUM type, const char* p){
 VCL_INT
 vmod_size(VRT_CTX, VCL_ENUM type, VCL_STRING header)
 {
-	unsigned ret = 0;
-	enum gethdr_e where = vmod_convhdrtype(ctx, type, &ret);
-	if(ret){
-		//headerの値を作る必要がある
-		char tmp[256];
-		gen_hdrtxt(header, tmp, 256);
-		char * val = VRT_GetHdr(ctx,  where, tmp);
-		if(val){
-			return strlen(VRT_GetHdr(ctx,  where, tmp));
-		}else{
-			return 0;
-		}
-	}else{
-		return vmodreq_headersize(ctx, vmod_convtype(type) ,header);
-	}
+    CHECK_OBJ_NOTNULL(ctx, VRT_CTX_MAGIC);
+    CHECK_OBJ_NOTNULL(ctx->req, REQ_MAGIC);
+
+    const struct gethdr_s hdr = {
+        .what = !strcmp(type, "resp") ? HDR_RESP : HDR_REQ,
+        .where = header
+    };
+
+    const char *val = VRT_GetHdr(ctx, &hdr);
+    return val ? strlen(val) : 0;
 }
 
 ///////////////////////////////////////////////////////////////
