@@ -22,13 +22,6 @@
 //#define DEBUG_SYSLOG
 
 //////////////////////////////////////////
-//HTC_Read ~3.0.2
-typedef ssize_t HTC_READ302(struct http_conn *htc, void *d, size_t len);
-
-//HTC_Read 3.0.3~
-typedef ssize_t HTC_READ303(struct worker *w, struct http_conn *htc, void *d, size_t len);
-
-//////////////////////////////////////////
 //for internal head
 enum VMODREQ_TYPE { POST, GET, COOKIE, REQ, AUTO, NONE};
 
@@ -90,6 +83,14 @@ enum VMODREQ_PARSE{URL,MULTI,UNKNOWN};
 
 ssize_t vmod_HTC_Read(struct worker *, struct http_conn *, void *, size_t );
 
+static int vmod_Hook_unset_deliver(const struct vrt_ctx *);
+static int vmod_Hook_unset_bereq(const struct vrt_ctx *);
+static int vmod_Hook_unset_error(const struct vrt_ctx *);
+static void vmod_Hook_Miss_opt_post_loopup(const struct vrt_ctx *);
+
+static void vmodreq_headers_free(struct vmod_headers *);
+
+
 const char *vmodreq_header(const struct vrt_ctx *ctx, enum VMODREQ_TYPE , const char *);
 void vmodreq_sethead(const struct vrt_ctx *,struct vmod_request *, enum VMODREQ_TYPE ,const char *, const char *,int);
 struct vmod_headers *vmodreq_getheaders(const struct vrt_ctx *,struct vmod_request *, enum VMODREQ_TYPE );
@@ -99,6 +100,7 @@ void vmodreq_init_cookie(const struct vrt_ctx *,struct vmod_request *);
 void vmodreq_init_get(const struct vrt_ctx *,struct vmod_request *);
 void vmodreq_init_post(const struct vrt_ctx *,struct vmod_request *);
 struct vmod_request *vmodreq_get_raw(const struct vrt_ctx *);
+static void vmodreq_free(struct vmod_request *);
 
 int decodeForm_multipart(const struct vrt_ctx *,char *);
 int vmodreq_get_parse(const struct vrt_ctx *);

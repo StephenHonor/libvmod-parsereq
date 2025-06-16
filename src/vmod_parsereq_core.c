@@ -1,4 +1,5 @@
 #include "vmod_parsereq.h"
+#include "vmod_parsereq_core.h"
 
 /*
 	todo:
