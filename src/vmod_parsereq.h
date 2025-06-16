@@ -1,5 +1,3 @@
-define _GNU_SOURCE
-
 #include "config.h"
 
 #include <stdio.h>
@@ -11,7 +9,7 @@ define _GNU_SOURCE
 
 #include "vsb.h"
 #include "vtim.h"
-#include "vcc_parseform_if.h"
+#include "vcc_parsereq_if.h"
 #include "vmod_abi.h"
 
 
