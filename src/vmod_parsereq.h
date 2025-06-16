@@ -93,7 +93,6 @@ void vmodreq_init_cookie(const struct vrt_ctx *,struct vmod_request *);
 void vmodreq_init_get(const struct vrt_ctx *,struct vmod_request *);
 void vmodreq_init_post(const struct vrt_ctx *,struct vmod_request *);
 struct vmod_request *vmodreq_get_raw(const struct vrt_ctx *);
-static void vmodreq_free(struct vmod_request *);
 
 int decodeForm_multipart(const struct vrt_ctx *,char *);
 int vmodreq_get_parse(const struct vrt_ctx *);

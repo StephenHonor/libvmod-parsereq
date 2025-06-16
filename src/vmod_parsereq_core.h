@@ -31,3 +31,4 @@ static int vmod_Hook_unset_error(const struct vrt_ctx *);
 static void vmod_Hook_Miss_opt_post_loopup(const struct vrt_ctx *);
 
 static void vmodreq_headers_free(struct vmod_headers *);
+static void vmodreq_free(struct vmod_request *);
