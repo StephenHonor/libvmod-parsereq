@@ -107,11 +107,6 @@ enum VMODREQ_PARSE{URL,MULTI,UNKNOWN};
 
 ssize_t vmod_HTC_Read(struct worker *, struct http_conn *, void *, size_t );
 
-static int vmod_Hook_unset_deliver(const struct vrt_ctx *);
-static int vmod_Hook_unset_bereq(const struct vrt_ctx *);
-static int vmod_Hook_unset_error(const struct vrt_ctx *);
-static void vmod_Hook_Miss_opt_post_loopup(const struct vrt_ctx *);
-
 static void vmodreq_headers_free(struct vmod_headers *);
 
 
