@@ -22,8 +22,6 @@
 //#define DEBUG_SYSLOG
 
 //////////////////////////////////////////
-//Compatible use for HTC_Read
-static int type_htcread = 0;
 //HTC_Read ~3.0.2
 typedef ssize_t HTC_READ302(struct http_conn *htc, void *d, size_t len);
 
