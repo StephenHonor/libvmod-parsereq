@@ -127,7 +127,7 @@ vmod_cookie_header(VRT_CTX, VCL_STRING header){
 //生body取得系関数
 VCL_STRING
 vmod_body(VRT_CTX, VCL_ENUM type){
-	if(!vmodreq_get_raw(ctx->req)){
+	if(!vmodreq_get_raw(ctx)){
 	    WRONG("please write \"parsereq.init();\" to 1st line in vcl_recv.");
 	}
 	struct vmod_request *c = vmodreq_get(ctx);
