@@ -17,7 +17,6 @@ LT_INIT([dlopen disable-static])
 
 ax_enable_compile_warnings=error
 AX_COMPILER_FLAGS_CFLAGS
-AX_PTHREAD(,[AC_MSG_ERROR([Could not configure pthreads support])])
 
 AC_PROG_CC
 AC_PROG_CC_STDC
