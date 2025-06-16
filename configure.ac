@@ -47,7 +47,7 @@ AC_CHECK_HEADERS([sys/stdlib.h])
 
 m4_ifndef([VARNISH_PREREQ], AC_MSG_ERROR([Need varnish.m4 -- see README.rst]))
 
-VARNISH_VMODS([parseform])
+VARNISH_VMODS([parsereq])
 
 VMOD_TESTS="$(cd $srcdir/src && echo tests/*.vtc)"
 AC_SUBST(VMOD_TESTS)
