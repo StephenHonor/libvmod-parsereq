@@ -63,7 +63,8 @@ unsigned vmod_iterate(VRT_CTX, VCL_ENUM type, const char* p){
 
 ///////////////////////////////////////////////////////////////
 //サイズ取得系関数
-int vmod_size(VRT_CTX, VCL_ENUM type, VCL_STRING header)
+VCL_INT
+vmod_size(VRT_CTX, VCL_ENUM type, VCL_STRING header)
 {
 	unsigned ret = 0;
 	enum gethdr_e where = vmod_convhdrtype(ctx, type, &ret);
@@ -174,7 +175,8 @@ vmod_setopt(VRT_CTX, const char *opt){
 	}
 }
 
-int vmod_errcode(VRT_CTX){
+VCL_INT
+vmod_errcode(VRT_CTX){
 	if(!vmodreq_get_raw(sp)){
 		VRT_panic(ctx, "please write \"parsereq.init();\" to 1st line in vcl_recv.",vrt_magic_string_end);
 	}
