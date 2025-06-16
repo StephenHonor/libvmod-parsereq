@@ -15,9 +15,6 @@ AM_PROG_AR
 LT_PREREQ([2.2.6])
 LT_INIT([dlopen disable-static])
 
-ax_enable_compile_warnings=error
-AX_COMPILER_FLAGS_CFLAGS
-
 AC_PROG_CC
 AC_PROG_CC_STDC
 if test "x$ac_cv_prog_cc_c99" = xno; then
