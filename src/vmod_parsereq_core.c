@@ -99,7 +99,12 @@ void vmodreq_init_get(VRT_CTX,struct vmod_request *c){
 }
 
 void vmodreq_init_cookie(VRT_CTX,struct vmod_request *c){
-	const char *r = VRT_GetHdr(ctx, HDR_REQ, "\007cookie:");
+    const struct gethdr_s hdr = {
+        .what = HDR_REQ,
+        .where = "\007cookie:"
+    };
+
+	const char *r = VRT_GetHdr(ctx, &hdr);
 	if(!r) return;
 	int len = strlen(r);
 	c->raw_cookie = calloc(1, len +1);
@@ -728,7 +733,12 @@ int decodeForm_multipart(VRT_CTX,char *body){
 	//////////////////////////////
 	//get boundary
 
-	h_ctype_ptr = VRT_GetHdr(ctx, HDR_REQ, "\015Content-Type:");
+    const struct gethdr_s hdr = {
+        .what = HDR_REQ,
+        .where = "\015Content-Type:"
+    };
+
+	h_ctype_ptr = VRT_GetHdr(ctx, &hdr);
 	raw_boundary = strstr(h_ctype_ptr,"; boundary=");
 	if(!raw_boundary || strlen(raw_boundary) > 255){
 		return -5;
@@ -927,7 +937,12 @@ int vmodreq_reqbody(VRT_CTX, char**body,int *orig_content_length){
 
 	//////////////////////////////
 	//check Content-Length
-	h_clen_ptr = VRT_GetHdr(ctx, HDR_REQ, "\017Content-Length:");
+    const struct gethdr_s hdr = {
+        .what = HDR_REQ,
+        .where = "\015Content-Type:"
+    };
+
+	h_clen_ptr = VRT_GetHdr(ctx, &hdr);
 	if (!h_clen_ptr) {
 		//can't get
 		return -2;
@@ -1020,7 +1035,12 @@ int vmodreq_post_parse(VRT_CTX){
 
 	//////////////////////////////
 	//check Content-Type
-	h_ctype_ptr = VRT_GetHdr(ctx, HDR_REQ, "\015Content-Type:");
+    const struct gethdr_s hdr = {
+        .what = HDR_REQ,
+        .where = "\015Content-Type:"
+    };
+
+	h_ctype_ptr = VRT_GetHdr(ctx, &hdr);
 	if(h_ctype_ptr != NULL){
 		if      (h_ctype_ptr == strstr(h_ctype_ptr, "application/x-www-form-urlencoded")) {
 			//application/x-www-form-urlencoded
