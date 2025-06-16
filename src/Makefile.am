@@ -1,29 +1,33 @@
 INCLUDES = -I$(VARNISHSRC)/include -I$(VARNISHSRC)
 
 vmoddir = $(VMODDIR)
+
+
 vmod_LTLIBRARIES = libvmod_parsereq.la
+
+libvmod_parsereq_la_SOURCES = \
+	vmod_parsereq.c \
+    vmod_parsereq_core.c
+
+nodist_libvmod_parsereq_la_SOURCES = \
+	vcc_parsereq_if.c \
+	vcc_parsereq_if.h
+
+dist_man_MANS = vmod_parsereq.3
 
 libvmod_parsereq_la_LDFLAGS = -module -export-dynamic -avoid-version
 
-libvmod_parsereq_la_SOURCES = \
-	vcc_if.c \
-	vcc_if.h \
-	vmod_parsereq.c \
-	vmod_parsereq_core.c
+@BUILD_VMOD_PARSEREQ@
 
-vcc_if.c vcc_if.h: $(VARNISHSRC)/lib/libvmod_std/vmod.py $(top_srcdir)/src/vmod_parsereq.vcc
-	@PYTHON@ $(VARNISHSRC)/lib/libvmod_std/vmod.py $(top_srcdir)/src/vmod_parsereq.vcc
+AM_TESTS_ENVIRONMENT = \
+	PATH="$(VMOD_TEST_PATH)" \
+	LD_LIBRARY_PATH="$(VARNISH_LIBRARY_PATH)"
+TEST_EXTENSIONS = .vtc
+VTC_LOG_COMPILER = varnishtest -v
+AM_VTC_LOG_FLAGS = -Dvmod_parsereq="$(VMOD_PARSEREQ)"
 
-VMOD_TESTS = tests/*.vtc
-.PHONY: $(VMOD_TESTS)
-
-tests/*.vtc:
-	$(VARNISHSRC)/bin/varnishtest/varnishtest -Dvarnishd=$(VARNISHSRC)/bin/varnishd/varnishd -Dvmod_topbuild=$(abs_top_builddir) $@
-
-check: $(VMOD_TESTS)
+TESTS = @VMOD_TESTS@
 
 EXTRA_DIST = \
 	vmod_parsereq.vcc \
 	$(VMOD_TESTS)
-
-CLEANFILES = $(builddir)/vcc_if.c $(builddir)/vcc_if.h
