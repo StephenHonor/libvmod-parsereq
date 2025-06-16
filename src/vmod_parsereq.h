@@ -115,7 +115,7 @@ static void vmod_Hook_Miss_opt_post_loopup(struct sess *);
 static void vmodreq_headers_free(struct vmod_headers *);
 
 
-const char *vmodreq_header(struct sess *, enum VMODREQ_TYPE , const char *);
+const char *vmodreq_header(const struct vrt_ctx *ctx, enum VMODREQ_TYPE , const char *);
 void vmodreq_sethead(struct sess *,struct vmod_request *, enum VMODREQ_TYPE ,const char *, const char *,int);
 struct vmod_headers *vmodreq_getheaders(struct sess *,struct vmod_request *, enum VMODREQ_TYPE );
 struct vmod_request *vmodreq_get(struct sess *);
@@ -129,33 +129,33 @@ static void vmodreq_free(struct vmod_request *);
 int decodeForm_multipart(struct sess *,char *);
 int vmodreq_get_parse(struct sess *);
 int vmodreq_cookie_parse(struct sess *);
-int vmodreq_reqbody(struct sess *, char**,int*);
+int vmodreq_reqbody(const struct vrt_ctx *ctx, char**,int*);
 int vmodreq_post_parse(struct sess *);
-void init_header(struct sess *, enum gethdr_e);
+void init_header(const struct vrt_ctx *ctx, enum gethdr_e);
 
 const char *vmodreq_getheader(struct sess *,struct vmod_request *, enum VMODREQ_TYPE , const char *);
 int vmodreq_getheadersize(struct sess *,struct vmod_request *, enum VMODREQ_TYPE , const char *);
 struct hdr *vmodreq_getrawheader(struct sess *,struct vmod_request *, enum VMODREQ_TYPE , const char *);
 int vmodreq_decode_urlencode(struct sess *,char *,enum VMODREQ_TYPE,char,char,int);
 
-int vmodreq_hdr_count(struct sess *, enum VMODREQ_TYPE );
-const char *vmodreq_seek(struct sess *, enum VMODREQ_TYPE );
-void vmodreq_seek_reset(struct sess *, enum VMODREQ_TYPE );
+int vmodreq_hdr_count(const struct vrt_ctx *ctx, enum VMODREQ_TYPE );
+const char *vmodreq_seek(const struct vrt_ctx *ctx, enum VMODREQ_TYPE );
+void vmodreq_seek_reset(const struct vrt_ctx *ctx, enum VMODREQ_TYPE );
 
 void debugmsg(struct sess *,const char*,...);
 
 typedef int (*vcl_userdef_func)(struct sess *sp);
 
-const char* vmod_read_cur(struct sess *, enum VMODREQ_TYPE);
-unsigned vmod_read_iterate(struct sess *, const char* , enum VMODREQ_TYPE type);
+const char* vmod_read_cur(const struct vrt_ctx *ctx, enum VMODREQ_TYPE);
+unsigned vmod_read_iterate(const struct vrt_ctx *ctx, const char* , enum VMODREQ_TYPE type);
 
-int vmodreq_headersize(struct sess *, enum VMODREQ_TYPE , const char *);
+int vmodreq_headersize(const struct vrt_ctx *ctx, enum VMODREQ_TYPE , const char *);
 enum VMODREQ_TYPE vmod_convtype(const char*);
 enum gethdr_e vmod_convhdrtype(struct sess *,const char*, unsigned*);
 void gen_hdrtxt(const char *, char *, int);
-int count_header(struct sess *, enum gethdr_e );
-struct http * vrt_selecthttp(struct sess *, enum gethdr_e);
-const char*get_header_key(struct sess *, enum gethdr_e , int );
-void header_iterate(struct sess *, const char* , enum gethdr_e );
+int count_header(const struct vrt_ctx *ctx, enum gethdr_e );
+struct http * vrt_selecthttp(const struct vrt_ctx *ctx, enum gethdr_e);
+const char*get_header_key(const struct vrt_ctx *ctx, enum gethdr_e , int );
+void header_iterate(const struct vrt_ctx *ctx, const char* , enum gethdr_e );
 void setdebug();
 void chkinit(struct sess *);
