@@ -73,15 +73,11 @@ VCL_INT
 vmod_size(VRT_CTX, VCL_ENUM type, VCL_STRING header)
 {
 	unsigned ret = 0;
-	enum gethdr_e where = vmod_convhdrtype(ctx, type, &ret);
 	if(ret){
 		//headerの値を作る必要がある
-		char tmp[256];
-		gen_hdrtxt(header, tmp, 256);
-
         const struct gethdr_s hdr = {
             .what = HDR_REQ,
-            .where = header  // ✅ this is correct now
+            .where = header
         };
 
 		const char *val = VRT_GetHdr(ctx, &hdr);
