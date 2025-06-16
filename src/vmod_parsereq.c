@@ -172,7 +172,7 @@ vmod_cookie_body(VRT_CTX){
 VCL_VOID
 vmod_init(VRT_CTX){
 	struct vmod_request *c;
-	c = vmodreq_get_raw(ctx->req);
+	c = vmodreq_get_raw(ctx);
 	if(c){
 		c->nowtype = NONE;
 	}else{
@@ -189,7 +189,7 @@ vmod_debuginit(VRT_CTX)
 
 VCL_VOID
 vmod_setopt(VRT_CTX, const char *opt){
-	if(!vmodreq_get_raw(ctx->req)){
+	if(!vmodreq_get_raw(ctx)){
 		WRONG("please write \"parsereq.init();\" to 1st line in vcl_recv.");
 	}
 	struct vmod_request *c = vmodreq_get(ctx);
@@ -201,7 +201,7 @@ vmod_setopt(VRT_CTX, const char *opt){
 
 VCL_INT
 vmod_errcode(VRT_CTX){
-	if(!vmodreq_get_raw(ctx->req)){
+	if(!vmodreq_get_raw(ctx)){
 		WRONG("please write \"parsereq.init();\" to 1st line in vcl_recv.");
 	}
 	return vmodreq_get(ctx)->parse_ret;
