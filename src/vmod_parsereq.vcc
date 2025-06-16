@@ -1,5 +1,4 @@
 $Module parseform 3 'Parsereq VMOD'
-$Init init_function
 
 $Function VOID   init()
 $Function INT    errcode()
