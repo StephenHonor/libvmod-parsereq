@@ -61,7 +61,7 @@ vmod_current_key(VRT_CTX, VCL_ENUM type){
 
 ///////////////////////////////////////////////////////////////
 //反復処理系
-VCL_UNSIGNED
+VCL_INT
 vmod_iterate(VRT_CTX, VCL_ENUM type, const char* p){
 	return vmod_read_iterate(ctx, p,vmod_convtype(type));
 }
@@ -186,7 +186,7 @@ vmod_debuginit(VRT_CTX)
 VCL_VOID
 vmod_setopt(VRT_CTX, const char *opt){
 	if(!vmodreq_get_raw(sp)){
-		VRT_panic(ctx, "please write \"parsereq.init();\" to 1st line in vcl_recv.",vrt_magic_string_end);
+		WRONG("please write \"parsereq.init();\" to 1st line in vcl_recv.");
 	}
 	struct vmod_request *c = vmodreq_get(sp);
 	if (!strcmp(opt, "enable_post_lookup")){
@@ -198,7 +198,7 @@ vmod_setopt(VRT_CTX, const char *opt){
 VCL_INT
 vmod_errcode(VRT_CTX){
 	if(!vmodreq_get_raw(sp)){
-		VRT_panic(ctx, "please write \"parsereq.init();\" to 1st line in vcl_recv.",vrt_magic_string_end);
+		WRONG("please write \"parsereq.init();\" to 1st line in vcl_recv.");
 	}
 	return vmodreq_get(sp)->parse_ret;
 }

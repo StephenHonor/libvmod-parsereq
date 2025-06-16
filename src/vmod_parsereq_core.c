@@ -48,11 +48,11 @@ static void vmodreq_free(struct vmod_request *c) {
 
 ////////////////////////////////////////////////////
 //格納したパース構造体へのポインタを取得
-struct vmod_request *vmodreq_get_raw(struct sess *sp){
+struct vmod_request *vmodreq_get_raw(VRT_CTX){
 	const char *tmp;
 	struct vmod_request *c;
 
-	tmp = VRT_GetHdr(sp, HDR_REQ, POST_REQ_HDR);
+	tmp = VRT_GetHdr(ctx, HDR_REQ, POST_REQ_HDR);
 	
 	if(tmp){
 		c = (struct vmod_request *)atol(tmp);
@@ -64,20 +64,20 @@ struct vmod_request *vmodreq_get_raw(struct sess *sp){
 
 ////////////////////////////////////////////////////
 //各種データ（post,get,cookie）を取得する
-void vmodreq_init_post(struct sess *sp,struct vmod_request *c){
-	if(sp->htc->pipeline.b == NULL) return;
-	int len = Tlen(sp->htc->pipeline);
+void vmodreq_init_post(VRT_CTX,struct vmod_request *c){
+	if(ctx->htc->pipeline.b == NULL) return;
+	int len = Tlen(ctx->htc->pipeline);
 	c->raw_post = calloc(1, len +1);
 	AN(c->raw_post);
 	c->size_post = len;
 	c->raw_post[len]=0;
-	memcpy(c->raw_post,sp->htc->pipeline.b,len);
+	memcpy(c->raw_post,ctx->htc->pipeline.b,len);
 
 }
 
-void vmodreq_init_get(struct sess *sp,struct vmod_request *c){
+void vmodreq_init_get(VRT_CTX,struct vmod_request *c){
 	
-	const char *url = sp->http->hd[HTTP_HDR_URL].b;
+	const char *url = ctx->http->hd[HTTP_HDR_URL].b;
 	char *sc_q;
 	if(!(sc_q = strchr(url,'?'))) return;
 	sc_q++;
@@ -93,8 +93,8 @@ void vmodreq_init_get(struct sess *sp,struct vmod_request *c){
 //		c->raw_get[len-1] = 0;
 }
 
-void vmodreq_init_cookie(struct sess *sp,struct vmod_request *c){
-	const char *r = VRT_GetHdr(sp, HDR_REQ, "\007cookie:");
+void vmodreq_init_cookie(VRT_CTX,struct vmod_request *c){
+	const char *r = VRT_GetHdr(ctx, HDR_REQ, "\007cookie:");
 	if(!r) return;
 	int len = strlen(r);
 	c->raw_cookie = calloc(1, len +1);
@@ -108,7 +108,7 @@ void vmodreq_init_cookie(struct sess *sp,struct vmod_request *c){
 ////////////////////////////////////////////////////
 //構造体を初期化
 //init structure
-struct vmod_request *vmodreq_init(struct sess *sp){
+struct vmod_request *vmodreq_init(VRT_CTX){
 
 	struct vmod_request *c;
 	int r;
@@ -137,16 +137,16 @@ struct vmod_request *vmodreq_init(struct sess *sp){
 
 	//assign pointer
 	snprintf(buf,64,"%ld",c);
-	VRT_SetHdr(sp, HDR_REQ, POST_REQ_HDR, buf,vrt_magic_string_end);
+	VRT_SetHdr(ctx, HDR_REQ, POST_REQ_HDR, buf,vrt_magic_string_end);
 
 	//parse post data
 	r =vmodreq_post_parse(sp);
 	c->parse_ret = r;
 	
 	//init rawdata
-	vmodreq_init_post(sp,c);
-	vmodreq_init_get(sp,c);
-	vmodreq_init_cookie(sp,c);
+	vmodreq_init_post(ctx,c);
+	vmodreq_init_get(ctx,c);
+	vmodreq_init_cookie(ctx,c);
 	//parse get data
 	r = vmodreq_get_parse(sp);
 	r = vmodreq_cookie_parse(sp);
@@ -155,27 +155,27 @@ struct vmod_request *vmodreq_init(struct sess *sp){
 	c->nowtype = NONE;
 	
 	//hook for vcl function
-	if(hook_done == 1 && sp->vcl->deliver_func != vmod_Hook_unset_deliver) hook_done = 0;
+	if(hook_done == 1 && ctx->vcl->deliver_func != vmod_Hook_unset_deliver) hook_done = 0;
 	
 	if(hook_done == 0){
 		AZ(pthread_mutex_lock(&vmod_mutex));
 		if(hook_done == 0){
-			debugmsg(sp,"vmprd %d hook start",sp->xid);
+			debugmsg(ctx,"vmprd %d hook start",ctx->xid);
 			
-			vmod_Hook_deliver		= sp->vcl->deliver_func;
-			sp->vcl->deliver_func	= vmod_Hook_unset_deliver;
+			vmod_Hook_deliver		= ctx->vcl->deliver_func;
+			ctx->vcl->deliver_func	= vmod_Hook_unset_deliver;
 
-			vmod_Hook_miss			= sp->vcl->miss_func;
-			sp->vcl->miss_func		= vmod_Hook_unset_bereq;
+			vmod_Hook_miss			= ctx->vcl->miss_func;
+			ctx->vcl->miss_func		= vmod_Hook_unset_bereq;
 			
-			vmod_Hook_pass			= sp->vcl->pass_func;
-			sp->vcl->pass_func		= vmod_Hook_unset_bereq;
+			vmod_Hook_pass			= ctx->vcl->pass_func;
+			ctx->vcl->pass_func		= vmod_Hook_unset_bereq;
 			
-			vmod_Hook_pipe			= sp->vcl->pipe_func;
-			sp->vcl->pipe_func		= vmod_Hook_unset_bereq;
+			vmod_Hook_pipe			= ctx->vcl->pipe_func;
+			ctx->vcl->pipe_func		= vmod_Hook_unset_bereq;
 
-			vmod_Hook_error			= sp->vcl->error_func;
-			sp->vcl->error_func		= vmod_Hook_unset_error;
+			vmod_Hook_error			= ctx->vcl->error_func;
+			ctx->vcl->error_func		= vmod_Hook_unset_error;
 			
 			hook_done				= 1;
 
@@ -190,7 +190,7 @@ struct vmod_request *vmodreq_init(struct sess *sp){
 ////////////////////////////////////////////////////
 //構造体へのポインタを取得（初期化されてないときは初期化を行う）
 //get structure pointer
-struct vmod_request *vmodreq_get(struct sess *sp){
+struct vmod_request *vmodreq_get(VRT_CTX){
 	struct vmod_request *c;
 	c = vmodreq_get_raw(sp);
 	if(c)
@@ -201,7 +201,7 @@ struct vmod_request *vmodreq_get(struct sess *sp){
 ////////////////////////////////////////////////////
 //ヘッダフィールドを格納しているポインタを返却
 //get headers
-struct vmod_headers *vmodreq_getheaders(struct sess *sp, struct vmod_request *c, enum VMODREQ_TYPE type){
+struct vmod_headers *vmodreq_getheaders(VRT_CTX, struct vmod_request *c, enum VMODREQ_TYPE type){
 
 	struct vmod_headers *r = NULL;
 	switch(type){
@@ -219,8 +219,8 @@ struct vmod_headers *vmodreq_getheaders(struct sess *sp, struct vmod_request *c,
 			break;
 		case AUTO:
 			if(c->nowtype == NONE)
-				VRT_panic(sp,"auto type using for in subroutine only, that is called by iterate function.",vrt_magic_string_end);
-			r = vmodreq_getheaders(sp,c, c->nowtype);
+				VRT_panic(ctx,"auto type using for in subroutine only, that is called by iterate function.",vrt_magic_string_end);
+			r = vmodreq_getheaders(ctx,c, c->nowtype);
 			break;
 	}
 	return r;
@@ -229,7 +229,7 @@ struct vmod_headers *vmodreq_getheaders(struct sess *sp, struct vmod_request *c,
 ////////////////////////////////////////////////////
 //値を格納
 //store value
-void vmodreq_sethead(struct sess *sp, struct vmod_request *c, enum VMODREQ_TYPE type,const char *key, const char *value,int size)
+void vmodreq_sethead(VRT_CTX, struct vmod_request *c, enum VMODREQ_TYPE type,const char *key, const char *value,int size)
 {
 	if((!key || key[0] == 0) && size ==0) return;
 	struct hdr *exhead;
@@ -239,8 +239,8 @@ void vmodreq_sethead(struct sess *sp, struct vmod_request *c, enum VMODREQ_TYPE 
 	struct vmod_headers *hs;
 	
 	int ndsize = 0;
-	hs = vmodreq_getheaders(sp,c,type);
-	exhead = vmodreq_getrawheader(sp,c,type,key);
+	hs = vmodreq_getheaders(ctx,c,type);
+	exhead = vmodreq_getrawheader(ctx,c,type,key);
 
 	if(exhead){
 		//既に値が存在する場合はカンマ区切りで連結
@@ -285,14 +285,14 @@ void vmodreq_sethead(struct sess *sp, struct vmod_request *c, enum VMODREQ_TYPE 
 
 ////////////////////////////////////////////////////
 //オフセットをリセットする
-void vmodreq_seek_reset(struct sess *sp, enum VMODREQ_TYPE type)
+void vmodreq_seek_reset(VRT_CTX, enum VMODREQ_TYPE type)
 {
 	chkinit(sp);
 	struct vmod_request *c = vmodreq_get(sp);
-	struct vmod_headers *hs= vmodreq_getheaders(sp,c,type);
+	struct vmod_headers *hs= vmodreq_getheaders(ctx,c,type);
 	switch(type){
 	case REQ:
-		init_header(sp, HDR_REQ);
+		init_header(ctx, HDR_REQ);
 		break;
 	default:
 		hs->seek = NULL;
@@ -303,29 +303,29 @@ void vmodreq_seek_reset(struct sess *sp, enum VMODREQ_TYPE type)
 
 ////////////////////////////////////////////////////
 //現在のオフセットのキーを取得
-const char* vmod_read_cur(struct sess *sp, enum VMODREQ_TYPE type){
+const char* vmod_read_cur(VRT_CTX, enum VMODREQ_TYPE type){
 	chkinit(sp);
 	struct vmod_request *c = vmodreq_get(sp);
 
 	struct vmod_headers *hs;
-	hs = vmodreq_getheaders(sp,c,type);
+	hs = vmodreq_getheaders(ctx,c,type);
 	return hs->seek;
 }
 ////////////////////////////////////////////////////
 //反復処理を行う
-unsigned vmod_read_iterate(struct sess *sp, const char* p, enum VMODREQ_TYPE type){
+unsigned vmod_read_iterate(VRT_CTX, const char* p, enum VMODREQ_TYPE type){
 	unsigned ret = (0 == 1);
 	chkinit(sp);
 	struct vmod_request *c = vmodreq_get(sp);
 	
-	vmodreq_seek_reset(sp,type);
-	int max = vmodreq_hdr_count(sp, type);
+	vmodreq_seek_reset(ctx,type);
+	int max = vmodreq_hdr_count(ctx, type);
 	vcl_userdef_func func = (vcl_userdef_func)p;
 	c->nowtype = type;
 	
 	for(int i=0; i<max; i++){
-		vmodreq_seek(sp,type);
-		if(type == REQ && strcmp(vmod_read_cur(sp,type), POST_REQ_HDR_NAME) == 0)
+		vmodreq_seek(ctx,type);
+		if(type == REQ && strcmp(vmod_read_cur(ctx,type), POST_REQ_HDR_NAME) == 0)
 			continue;
 		if(func(sp)){
 			ret = (1==1);
@@ -338,14 +338,14 @@ unsigned vmod_read_iterate(struct sess *sp, const char* p, enum VMODREQ_TYPE typ
 
 ////////////////////////////////////////////////////
 //各ヘッダの個数を取得
-int vmodreq_hdr_count(struct sess *sp, enum VMODREQ_TYPE type)
+int vmodreq_hdr_count(VRT_CTX, enum VMODREQ_TYPE type)
 {
 	chkinit(sp);
 	struct vmod_request *c = vmodreq_get(sp);
 	struct hdr *h;
 
 	struct vmod_headers *hs;
-	hs = vmodreq_getheaders(sp,c,type);
+	hs = vmodreq_getheaders(ctx,c,type);
 	char * seh = hs->seek;
 	int i = 0;
 	VTAILQ_FOREACH(h, &hs->headers, list) {
@@ -358,7 +358,7 @@ int vmodreq_hdr_count(struct sess *sp, enum VMODREQ_TYPE type)
 
 ////////////////////////////////////////////////////
 //オフセットを移動する
-const char *vmodreq_seek(struct sess *sp, enum VMODREQ_TYPE type)
+const char *vmodreq_seek(VRT_CTX, enum VMODREQ_TYPE type)
 {
 	chkinit(sp);
 	struct vmod_request *c = vmodreq_get(sp);
@@ -368,12 +368,12 @@ const char *vmodreq_seek(struct sess *sp, enum VMODREQ_TYPE type)
 	switch(type){
 	case REQ:
 		if(!c->init_req)
-			init_header(sp, HDR_REQ);
+			init_header(ctx, HDR_REQ);
 		break;
 	}
 
 	struct vmod_headers *hs;
-	hs = vmodreq_getheaders(sp,c,type);
+	hs = vmodreq_getheaders(ctx,c,type);
 	char * seh = hs->seek;
 
 	
@@ -400,14 +400,14 @@ const char *vmodreq_seek(struct sess *sp, enum VMODREQ_TYPE type)
 
 ////////////////////////////////////////////////////
 //キー名から値の構造体を取得
-struct hdr *vmodreq_getrawheader(struct sess *sp, struct vmod_request *c, enum VMODREQ_TYPE type, const char *header)
+struct hdr *vmodreq_getrawheader(VRT_CTX, struct vmod_request *c, enum VMODREQ_TYPE type, const char *header)
 {
 	struct hdr *h;
 	struct hdr *r = NULL;
 
 //	int i=0;
 	struct vmod_headers *hs;
-	hs = vmodreq_getheaders(sp,c,type);
+	hs = vmodreq_getheaders(ctx,c,type);
 	VTAILQ_FOREACH(h, &hs->headers, list) {
 //		++i;
 		if(!h->key && strcasecmp("", header) == 0){
@@ -423,11 +423,11 @@ struct hdr *vmodreq_getrawheader(struct sess *sp, struct vmod_request *c, enum V
 
 ////////////////////////////////////////////////////
 //値のサイズを取得
-int vmodreq_getheadersize(struct sess *sp, struct vmod_request *c, enum VMODREQ_TYPE type, const char *header)
+int vmodreq_getheadersize(VRT_CTX, struct vmod_request *c, enum VMODREQ_TYPE type, const char *header)
 {
 	struct hdr *h;
 	int r = 0;
-	h = vmodreq_getrawheader(sp,c,type,header);
+	h = vmodreq_getrawheader(ctx,c,type,header);
 	
 	if(h) r = h->size;
 	
@@ -437,11 +437,11 @@ int vmodreq_getheadersize(struct sess *sp, struct vmod_request *c, enum VMODREQ_
 
 ////////////////////////////////////////////////////
 //値を取得
-const char *vmodreq_getheader(struct sess *sp, struct vmod_request *c, enum VMODREQ_TYPE type, const char *header)
+const char *vmodreq_getheader(VRT_CTX, struct vmod_request *c, enum VMODREQ_TYPE type, const char *header)
 {
 	struct hdr *h;
 	char *r = NULL;
-	h = vmodreq_getrawheader(sp,c,type,header);
+	h = vmodreq_getrawheader(ctx,c,type,header);
 	
 	if(h) r = h->value;
 	
@@ -451,30 +451,30 @@ const char *vmodreq_getheader(struct sess *sp, struct vmod_request *c, enum VMOD
 
 ////////////////////////////////////////////////////
 //サイズを取得（呼び出し用にラップ）
-int vmodreq_headersize(struct sess *sp, enum VMODREQ_TYPE type, const char *header)
+int vmodreq_headersize(VRT_CTX, enum VMODREQ_TYPE type, const char *header)
 {
 	chkinit(sp);
 	struct vmod_request *c = vmodreq_get(sp);
-	return vmodreq_getheadersize(sp,c,type,header);
+	return vmodreq_getheadersize(ctx,c,type,header);
 }
 
 
 ////////////////////////////////////////////////////
 //値を取得（呼び出し用にラップ）
-const char *vmodreq_header(struct sess *sp, enum VMODREQ_TYPE type, const char *header)
+const char *vmodreq_header(VRT_CTX, enum VMODREQ_TYPE type, const char *header)
 {
 	chkinit(sp);
 	struct vmod_request *c = vmodreq_get(sp);
-	return vmodreq_getheader(sp,c,type,header);
+	return vmodreq_getheader(ctx,c,type,header);
 }
 
 //////////////////////////////////////////
 //フック時に呼び出される関数
 //hook function(miss,pass,pipe)
-static int vmod_Hook_unset_bereq(struct sess *sp){
-	VRT_SetHdr(sp, HDR_BEREQ, POST_REQ_HDR, vrt_magic_string_end);
+static int vmod_Hook_unset_bereq(VRT_CTX){
+	VRT_SetHdr(ctx, HDR_BEREQ, POST_REQ_HDR, vrt_magic_string_end);
 	
-	switch(sp->step){
+	switch(ctx->step){
 		case STP_MISS:
 			vmod_Hook_Miss_opt_post_loopup(sp);
 			return(vmod_Hook_miss(sp));
@@ -486,22 +486,22 @@ static int vmod_Hook_unset_bereq(struct sess *sp){
 			return(vmod_Hook_pipe(sp));
 	}
 }
-static void vmod_Hook_Miss_opt_post_loopup(struct sess *sp){
+static void vmod_Hook_Miss_opt_post_loopup(VRT_CTX){
 
 	
-	if(strcmp(sp->http->hd[HTTP_HDR_REQ].b, "POST")) return;
+	if(strcmp(ctx->http->hd[HTTP_HDR_REQ].b, "POST")) return;
 	struct vmod_request *c = vmodreq_get(sp);
 	if(!c->opt_post_lookup) return;
 
 	//send body
-	sp->sendbody = 1;
+	ctx->sendbody = 1;
 	//modify request method
-	VRT_l_bereq_request(sp,"POST",vrt_magic_string_end);
+	VRT_l_bereq_request(ctx,"POST",vrt_magic_string_end);
 	//set length
-	VRT_SetHdr(sp, HDR_BEREQ, "\017content-length:",VRT_int_string(sp, c->size_post),vrt_magic_string_end);
+	VRT_SetHdr(ctx, HDR_BEREQ, "\017content-length:",VRT_int_string(ctx, c->size_post),vrt_magic_string_end);
 	
 }
-static int vmod_Hook_unset_error(struct sess *sp){
+static int vmod_Hook_unset_error(VRT_CTX){
 	struct vmod_request *c = vmodreq_get(sp);
 	c->nowtype = NONE;
 	return(vmod_Hook_error(sp));
@@ -510,13 +510,13 @@ static int vmod_Hook_unset_error(struct sess *sp){
 //////////////////////////////////////////
 //フック時に呼び出される関数（deliver)
 //hook function(deliver)
-static int vmod_Hook_unset_deliver(struct sess *sp){
+static int vmod_Hook_unset_deliver(VRT_CTX){
 	int ret = vmod_Hook_deliver(sp);
 	struct vmod_request *c;
 	c = vmodreq_get_raw(sp);
 	if(c)
 		vmodreq_free(c);
-	debugmsg(sp,"vmprd %d <<<<<<<<<<<<<<<end",sp->xid);
+	debugmsg(ctx,"vmprd %d <<<<<<<<<<<<<<<end",ctx->xid);
 
 	return(ret);
 
@@ -539,7 +539,7 @@ enum VMODREQ_TYPE vmod_convtype(const char*type){
 
 //////////////////////////////////////////
 //文字列から列挙型gethdr_eに変換
-enum gethdr_e vmod_convhdrtype(struct sess *sp,const char*type, unsigned* ret){
+enum gethdr_e vmod_convhdrtype(VRT_CTX,const char*type, unsigned* ret){
 	*ret = (1==1);
 	if (!strcmp(type, "req"))
 		return HDR_REQ;
@@ -582,27 +582,27 @@ void gen_hdrtxt(const char *header,char *p, int size){
 //////////////////////////////////////////
 //vrt.cから移植
 struct http *
-vrt_selecthttp(struct sess *sp, enum gethdr_e where)
+vrt_selecthttp(VRT_CTX, enum gethdr_e where)
 {
 	struct http *hp;
 
-	CHECK_OBJ_NOTNULL(sp, SESS_MAGIC);
+	CHECK_OBJ_NOTNULL(ctx, SESS_MAGIC);
 	switch (where) {
 	case HDR_REQ:
-		hp = sp->http;
+		hp = ctx->http;
 		break;
 	case HDR_BEREQ:
-		hp = sp->wrk->bereq;
+		hp = ctx->wrk->bereq;
 		break;
 	case HDR_BERESP:
-		hp = sp->wrk->beresp;
+		hp = ctx->wrk->beresp;
 		break;
 	case HDR_RESP:
-		hp = sp->wrk->resp;
+		hp = ctx->wrk->resp;
 		break;
 	case HDR_OBJ:
-		CHECK_OBJ_NOTNULL(sp->obj, OBJECT_MAGIC);
-		hp = sp->obj->http;
+		CHECK_OBJ_NOTNULL(ctx->obj, OBJECT_MAGIC);
+		hp = ctx->obj->http;
 		break;
 	default:
 		INCOMPL();
@@ -612,24 +612,24 @@ vrt_selecthttp(struct sess *sp, enum gethdr_e where)
 }
 //////////////////////////////////////////
 //ヘッダの個数を取得
-int count_header(struct sess *sp, enum gethdr_e where)
+int count_header(VRT_CTX, enum gethdr_e where)
 {
 	struct http *hp;
-	hp = vrt_selecthttp(sp, where);
+	hp = vrt_selecthttp(ctx, where);
 	return hp->nhd - HTTP_HDR_FIRST;
 }
 
-const char *get_header_key(struct sess *sp, enum gethdr_e where, int index){
+const char *get_header_key(VRT_CTX, enum gethdr_e where, int index){
 	chkinit(sp);
 	struct vmod_request *c = vmodreq_get(sp);
 
 	if(index == 0) return NULL;
-	int len = count_header(sp, where);
+	int len = count_header(ctx, where);
 	if(len < index) return NULL;
 	index += HTTP_HDR_FIRST -1;
 
 	struct http *hp;
-	hp = vrt_selecthttp(sp, where);
+	hp = vrt_selecthttp(ctx, where);
 	const char *p = hp->hd[index].b;
 	char * p2 = strchr(p,':');
 	unsigned l = p2 - p;
@@ -638,7 +638,7 @@ const char *get_header_key(struct sess *sp, enum gethdr_e where, int index){
 	c->seek_tmp[l] = 0;
 	return c->seek_tmp;
 }
-void init_header(struct sess *sp, enum gethdr_e where){
+void init_header(VRT_CTX, enum gethdr_e where){
 	chkinit(sp);
 	struct vmod_request *c = vmodreq_get(sp);
 	struct vmod_headers *h;
@@ -655,12 +655,12 @@ void init_header(struct sess *sp, enum gethdr_e where){
 		ALLOC_OBJ(h,VMOD_HEADERS_MAGIC);
 		AN(h);
 	}
-	int max = count_header(sp,where);
+	int max = count_header(ctx,where);
 	const char *tmpkey;
 	struct hdr *vh;
 	
 	for(int i=1; i<=max; i++){
-		tmpkey = get_header_key(sp, where, i);
+		tmpkey = get_header_key(ctx, where, i);
 		vh = calloc(1, sizeof(struct hdr));
 		AN(vh);
 		vh->key = strndup(tmpkey, strlen(tmpkey));
@@ -701,7 +701,7 @@ ssize_t vmod_HTC_Read(struct worker *w, struct http_conn *htc, void *d, size_t l
 
 //////////////////////////////////////////
 //content-typeがマルチパートのデータをパースする
-int decodeForm_multipart(struct sess *sp,char *body){
+int decodeForm_multipart(VRT_CTX,char *body){
 	
 
 	char tmp,tmp2;
@@ -723,7 +723,7 @@ int decodeForm_multipart(struct sess *sp,char *body){
 	//////////////////////////////
 	//get boundary
 
-	h_ctype_ptr = VRT_GetHdr(sp, HDR_REQ, "\015Content-Type:");
+	h_ctype_ptr = VRT_GetHdr(ctx, HDR_REQ, "\015Content-Type:");
 	raw_boundary = strstr(h_ctype_ptr,"; boundary=");
 	if(!raw_boundary || strlen(raw_boundary) > 255){
 		return -5;
@@ -794,7 +794,7 @@ int decodeForm_multipart(struct sess *sp,char *body){
 		//bodyをURLエンコードする
 
 	
-		vmodreq_sethead(sp,c,POST,sc_name,start_body,p_body_end - start_body);		
+		vmodreq_sethead(ctx,c,POST,sc_name,start_body,p_body_end - start_body);
 		
 		name_line_end[idx]		= tmp;
 //		p_body_end[0]			= tmp2;
@@ -811,7 +811,7 @@ int decodeForm_multipart(struct sess *sp,char *body){
 
 //////////////////////////////////////////
 //URLエンコードされてるデータをパースする
-int vmodreq_decode_urlencode(struct sess *sp,char *body,enum VMODREQ_TYPE type,char eq,char amp,int size){
+int vmodreq_decode_urlencode(VRT_CTX,char *body,enum VMODREQ_TYPE type,char eq,char amp,int size){
 	
 	char *sc_eq,*sc_amp;
 	char *tmpbody = body;
@@ -835,12 +835,12 @@ int vmodreq_decode_urlencode(struct sess *sp,char *body,enum VMODREQ_TYPE type,c
 			sc_eq=NULL;
 		}
 		if(!sc_eq && !sc_amp){
-			vmodreq_sethead(sp,c,type,tmpbody,"",0);
+			vmodreq_sethead(ctx,c,type,tmpbody,"",0);
 			break;
 		}else if(!sc_eq){
 			tmp2 = sc_amp[0];
 			sc_amp[0] = 0;// & -> null
-			vmodreq_sethead(sp,c,type,tmpbody,"",0);
+			vmodreq_sethead(ctx,c,type,tmpbody,"",0);
 			sc_amp[0] = tmp2;
 			tmpbody =sc_amp+1;
 			size -= tmpbody - start;
@@ -868,7 +868,7 @@ int vmodreq_decode_urlencode(struct sess *sp,char *body,enum VMODREQ_TYPE type,c
 		//////////////////////////////
 		//set header
 		
-		vmodreq_sethead(sp,c,type,tmphead,tmpbody,sc_amp - tmpbody);
+		vmodreq_sethead(ctx,c,type,tmphead,tmpbody,sc_amp - tmpbody);
 		
 		sc_eq[0]  = tmp;//thead
 		tmpbody   = sc_amp + 1;
@@ -891,20 +891,20 @@ int vmodreq_decode_urlencode(struct sess *sp,char *body,enum VMODREQ_TYPE type,c
 
 //////////////////////////////////////////
 //クッキーをパース
-int vmodreq_cookie_parse(struct sess *sp){
+int vmodreq_cookie_parse(VRT_CTX){
 	struct vmod_request *c = vmodreq_get(sp);
 	if(!c->raw_cookie) return 1;
 
-	return vmodreq_decode_urlencode(sp,c->raw_cookie,COOKIE,'=',';',c->size_cookie);
+	return vmodreq_decode_urlencode(ctx,c->raw_cookie,COOKIE,'=',';',c->size_cookie);
 }
 
 //////////////////////////////////////////
 //GETをパース
-int vmodreq_get_parse(struct sess *sp){
+int vmodreq_get_parse(VRT_CTX){
 	int ret=1;
 	struct vmod_request *c = vmodreq_get(sp);
 	if(c->raw_get)
-		ret = vmodreq_decode_urlencode(sp,c->raw_get,GET,'=','&',c->size_get);
+		ret = vmodreq_decode_urlencode(ctx,c->raw_get,GET,'=','&',c->size_get);
 	return ret;
 }
 
@@ -912,8 +912,8 @@ int vmodreq_get_parse(struct sess *sp){
 
 //////////////////////////////////////////
 //リクエストBodyを取得
-int vmodreq_reqbody(struct sess *sp, char**body,int *orig_content_length){
-	debugmsg(sp,"vmprd %d vmodreq_reqbody|start",sp->xid);
+int vmodreq_reqbody(VRT_CTX, char**body,int *orig_content_length){
+	debugmsg(ctx,"vmprd %d vmodreq_reqbody|start",ctx->xid);
 	unsigned long		content_length;
 	char 				*h_clen_ptr;
 	int					buf_size, rsize, re;
@@ -922,45 +922,45 @@ int vmodreq_reqbody(struct sess *sp, char**body,int *orig_content_length){
 
 	//////////////////////////////
 	//check Content-Length
-	h_clen_ptr = VRT_GetHdr(sp, HDR_REQ, "\017Content-Length:");
+	h_clen_ptr = VRT_GetHdr(ctx, HDR_REQ, "\017Content-Length:");
 	if (!h_clen_ptr) {
 		//can't get
 		return -2;
 	}
 	*orig_content_length = content_length = strtoul(h_clen_ptr, NULL, 10);
-	debugmsg(sp,"vmprd %d vmodreq_reqbody|content-length %ld",sp->xid,content_length);
+	debugmsg(ctx,"vmprd %d vmodreq_reqbody|content-length %ld",ctx->xid,content_length);
 	if (content_length <= 0) {
 		//illegal length
 		return -2;
 	}
 	//////////////////////////////
 	//Check POST data is loaded
-	if(sp->htc->pipeline.b != NULL && Tlen(sp->htc->pipeline) == content_length){
+	if(ctx->htc->pipeline.b != NULL && Tlen(ctx->htc->pipeline) == content_length){
 		//complete read
-		debugmsg(sp,"vmprd %d vmodreq_reqbody|compete read",sp->xid);
-		*body = sp->htc->pipeline.b;
+		debugmsg(ctx,"vmprd %d vmodreq_reqbody|compete read",ctx->xid);
+		*body = ctx->htc->pipeline.b;
 	}else{
 		//incomplete read
-		debugmsg(sp,"vmprd %d vmodreq_reqbody|incompete read",sp->xid);
-		int rxbuf_size = Tlen(sp->htc->rxbuf);
-		debugmsg(sp,"vmprd %d vmodreq_reqbody|rxbufsize len:%d",sp->xid,rxbuf_size);
+		debugmsg(ctx,"vmprd %d vmodreq_reqbody|incompete read",ctx->xid);
+		int rxbuf_size = Tlen(ctx->htc->rxbuf);
+		debugmsg(ctx,"vmprd %d vmodreq_reqbody|rxbufsize len:%d",ctx->xid,rxbuf_size);
 		///////////////////////////////////////////////
 		//use ws
-		int u = WS_Reserve(sp->wrk->ws, 0);
+		int u = WS_Reserve(ctx->wrk->ws, 0);
 		if(u < content_length + rxbuf_size + 1){
-			debugmsg(sp,"vmprd %d vmodreq_reqbody|none space(-1)",sp->xid);
-			WS_Release(sp->wrk->ws,0);
+			debugmsg(ctx,"vmprd %d vmodreq_reqbody|none space(-1)",ctx->xid);
+			WS_Release(ctx->wrk->ws,0);
 			return -1;
 		}
-		*body = (char*)sp->wrk->ws->f;
-		memcpy(*body, sp->htc->rxbuf.b, rxbuf_size);
-		sp->htc->rxbuf.b = *body;
+		*body = (char*)ctx->wrk->ws->f;
+		memcpy(*body, ctx->htc->rxbuf.b, rxbuf_size);
+		ctx->htc->rxbuf.b = *body;
 		*body            += rxbuf_size;
 		*body[0]         = 0;
-		sp->htc->rxbuf.e = *body;
-		WS_Release(sp->wrk->ws,content_length + rxbuf_size + 1);
+		ctx->htc->rxbuf.e = *body;
+		WS_Release(ctx->wrk->ws,content_length + rxbuf_size + 1);
 		///////////////////////////////////////////////
-		debugmsg(sp,"vmprd %d vmodreq_reqbody|old pipeline e:%ld b:%ld len:%ld",sp->xid,sp->htc->pipeline.b ,sp->htc->pipeline.e, sp->htc->pipeline.e - sp->htc->pipeline.b);
+		debugmsg(ctx,"vmprd %d vmodreq_reqbody|old pipeline e:%ld b:%ld len:%ld",ctx->xid,ctx->htc->pipeline.b ,ctx->htc->pipeline.e, ctx->htc->pipeline.e - ctx->htc->pipeline.b);
 		//////////////////////////////
 		//read post data
 		re = 0;
@@ -973,9 +973,9 @@ int vmodreq_reqbody(struct sess *sp, char**body,int *orig_content_length){
 			}
 
 			// read body data into 'buf'
-			//rsize = HTC_Read(sp->htc, buf, buf_size);
-			rsize = vmod_HTC_Read(sp->wrk, sp->htc, buf, buf_size);
-			debugmsg(sp,"vmprd %d vmodreq_reqbody|HTC_Read len:%d",sp->xid,rsize);
+			//rsize = HTC_Read(ctx->htc, buf, buf_size);
+			rsize = vmod_HTC_Read(ctx->wrk, ctx->htc, buf, buf_size);
+			debugmsg(ctx,"vmprd %d vmodreq_reqbody|HTC_Read len:%d",ctx->xid,rsize);
 			if (rsize <= 0) {
 				return -3;
 			}
@@ -988,9 +988,9 @@ int vmodreq_reqbody(struct sess *sp, char**body,int *orig_content_length){
 			re += rsize;
 		}
 		
-		sp->htc->pipeline.b = *body;
-		sp->htc->pipeline.e = *body + *orig_content_length;
-		debugmsg(sp,"vmprd %d vmodreq_reqbody|new pipeline e:%ld b:%ld len:%ld",sp->xid,sp->htc->pipeline.b ,sp->htc->pipeline.e, sp->htc->pipeline.e - sp->htc->pipeline.b);
+		ctx->htc->pipeline.b = *body;
+		ctx->htc->pipeline.e = *body + *orig_content_length;
+		debugmsg(ctx,"vmprd %d vmodreq_reqbody|new pipeline e:%ld b:%ld len:%ld",ctx->xid,ctx->htc->pipeline.b ,ctx->htc->pipeline.e, ctx->htc->pipeline.e - ctx->htc->pipeline.b);
 
 	}
 	return 1;
@@ -998,8 +998,8 @@ int vmodreq_reqbody(struct sess *sp, char**body,int *orig_content_length){
 
 //////////////////////////////////////////
 //POSTをパース
-int vmodreq_post_parse(struct sess *sp){
-	debugmsg(sp,"vmprd %d >>>>>>>>>>>>>>>start",sp->xid);
+int vmodreq_post_parse(VRT_CTX){
+	debugmsg(ctx,"vmprd %d >>>>>>>>>>>>>>>start",ctx->xid);
 
 /*
 	2	=sucess		unknown or none content-type
@@ -1015,7 +1015,7 @@ int vmodreq_post_parse(struct sess *sp){
 
 	//////////////////////////////
 	//check Content-Type
-	h_ctype_ptr = VRT_GetHdr(sp, HDR_REQ, "\015Content-Type:");
+	h_ctype_ptr = VRT_GetHdr(ctx, HDR_REQ, "\015Content-Type:");
 	if(h_ctype_ptr != NULL){
 		if      (h_ctype_ptr == strstr(h_ctype_ptr, "application/x-www-form-urlencoded")) {
 			//application/x-www-form-urlencoded
@@ -1030,21 +1030,21 @@ int vmodreq_post_parse(struct sess *sp){
 		//none support type
 		exec = UNKNOWN;
 	}
-	debugmsg(sp,"vmprd %d vmodreq_post_parse|content-type|%d",sp->xid,exec);
+	debugmsg(ctx,"vmprd %d vmodreq_post_parse|content-type|%d",ctx->xid,exec);
 	
 
 	
 	//get request body
-	ret = vmodreq_reqbody(sp,&body,&content_length);
+	ret = vmodreq_reqbody(ctx,&body,&content_length);
 	if(ret<1 && exec != UNKNOWN) return ret;
 
 	//decode form
 	switch(exec){
 		case URL:
-			ret = vmodreq_decode_urlencode(sp,body,POST,'=','&',content_length);
+			ret = vmodreq_decode_urlencode(ctx,body,POST,'=','&',content_length);
 			break;
 		case MULTI:
-			ret = decodeForm_multipart(sp, body);
+			ret = decodeForm_multipart(ctx, body);
 			break;
 		case UNKNOWN:
 			ret = 2;
@@ -1060,15 +1060,15 @@ int vmodreq_post_parse(struct sess *sp){
 void setdebug(){
 	is_debug = 1;
 }
-void debugmsg(struct sess *sp,const char* f,...){
+void debugmsg(VRT_CTX,const char* f,...){
 	if(!is_debug) return;
 	va_list ap;
 	va_start(ap, f);
 	vsyslog(LOG_NOTICE, f ,ap);
 	va_end(ap);
 }
-void chkinit(struct sess *sp){
+void chkinit(VRT_CTX){
 	if(!vmodreq_get_raw(sp)){
-		VRT_panic(sp,"please write \"parsereq.init();\" to 1st line in vcl_recv.",vrt_magic_string_end);
+		VRT_panic(ctx,"please write \"parsereq.init();\" to 1st line in vcl_recv.",vrt_magic_string_end);
 	}
 }
