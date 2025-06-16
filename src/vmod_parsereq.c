@@ -173,9 +173,3 @@ int vmod_errcode(struct sess *sp){
 	}
 	return vmodreq_get(sp)->parse_ret;
 }
-
-int
-init_function(struct vmod_priv *priv, const struct VCL_conf *conf)
-{
-	return (0);
-}
