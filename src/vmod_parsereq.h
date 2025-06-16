@@ -31,14 +31,6 @@ typedef ssize_t HTC_READ302(struct http_conn *htc, void *d, size_t len);
 typedef ssize_t HTC_READ303(struct worker *w, struct http_conn *htc, void *d, size_t len);
 
 //////////////////////////////////////////
-//Hook
-static unsigned           hook_done          = 0;
-static vcl_func_f         *vmod_Hook_miss    = NULL;
-static vcl_func_f         *vmod_Hook_pass    = NULL;
-static vcl_func_f         *vmod_Hook_pipe    = NULL;
-static vcl_func_f         *vmod_Hook_deliver = NULL;
-
-//////////////////////////////////////////
 //for internal head
 enum VMODREQ_TYPE { POST, GET, COOKIE, REQ, AUTO, NONE};
 
