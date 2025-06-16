@@ -42,7 +42,7 @@ const char* vmod_cookie_read_keylist(VRT_CTX){
 ///////////////////////////////////////////////////////////////
 //キーのオフセットを移動
 VCL_VOID
-vmod_next_offset(VRT_CTX, const char *type){
+vmod_next_offset(VRT_CTX, VCL_ENUM type){
 	vmodreq_seek(ctx, vmod_convtype(type));
 
 }
@@ -63,7 +63,7 @@ unsigned vmod_iterate(VRT_CTX, VCL_ENUM type, const char* p){
 
 ///////////////////////////////////////////////////////////////
 //サイズ取得系関数
-int vmod_size(VRT_CTX, const char *type, const char *header)
+int vmod_size(VRT_CTX, VCL_ENUM type, VCL_STRING header)
 {
 	unsigned ret = 0;
 	enum gethdr_e where = vmod_convhdrtype(ctx, type, &ret);
@@ -84,7 +84,7 @@ int vmod_size(VRT_CTX, const char *type, const char *header)
 
 ///////////////////////////////////////////////////////////////
 //Value取得系関数
-const char *vmod_param(VRT_CTX, const char *type ,const char *header){
+const char *vmod_param(VRT_CTX, VCL_ENUM type ,VCL_STRING header){
 	unsigned ret = 0;
 	enum gethdr_e where = vmod_convhdrtype(ctx, type, &ret);
 	if(ret){
@@ -97,21 +97,21 @@ const char *vmod_param(VRT_CTX, const char *type ,const char *header){
 	}
 }
 
-const char *vmod_post_header(VRT_CTX, const char *header){
+const char *vmod_post_header(VRT_CTX, VCL_STRING header){
 	return vmodreq_header(ctx, POST,header);
 }
 
-const char *vmod_get_header(VRT_CTX, const char *header){
+const char *vmod_get_header(VRT_CTX, VCL_STRING header){
 	return vmodreq_header(ctx, GET,header);
 }
 
-const char *vmod_cookie_header(VRT_CTX, const char *header){
+const char *vmod_cookie_header(VRT_CTX, VCL_STRING header){
 	return vmodreq_header(ctx, COOKIE,header);
 }
 
 ///////////////////////////////////////////////////////////////
 //生body取得系関数
-const char* vmod_body(VRT_CTX, const char *type){
+const char* vmod_body(VRT_CTX, VCL_ENUM type){
 	if(!vmodreq_get_raw(sp)){
 		VRT_panic(ctx, "please write \"parsereq.init();\" to 1st line in vcl_recv.",vrt_magic_string_end);
 	}
