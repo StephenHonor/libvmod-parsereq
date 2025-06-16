@@ -142,6 +142,13 @@ vmod_body(VRT_CTX, VCL_ENUM type){
 		case COOKIE:
 			return c->raw_cookie;
 			break;
+        case REQ:
+        case AUTO:
+        case NONE:
+            // handle or ignore
+            break;
+        default:
+            WRONG("Unhandled enum value in vmod_body");
 	}
 
 }
@@ -165,7 +172,7 @@ vmod_cookie_body(VRT_CTX){
 VCL_VOID
 vmod_init(VRT_CTX){
 	struct vmod_request *c;
-	c = vmodreq_get_raw(ctx);
+	c = vmodreq_get_raw(ctx->req);
 	if(c){
 		c->nowtype = NONE;
 	}else{
