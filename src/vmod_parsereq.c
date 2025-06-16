@@ -81,7 +81,8 @@ vmod_size(VRT_CTX, VCL_ENUM type, VCL_STRING header)
 
 		const struct gethdr_s hdr = {
             .what = HDR_REQ,
-            .where = header  // MUST be a string literal like "User-Agent:" or similar
+            .where = 0
+            .hdr = header
         };
 
 		const char *val = VRT_GetHdr(ctx, &hdr);
