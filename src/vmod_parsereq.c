@@ -151,6 +151,7 @@ vmod_body(VRT_CTX, VCL_ENUM type){
             WRONG("Unhandled enum value in vmod_body");
 	}
 
+    return NULL;
 }
 
 VCL_STRING

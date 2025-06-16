@@ -37,13 +37,6 @@ static vcl_func_f         *vmod_Hook_miss    = NULL;
 static vcl_func_f         *vmod_Hook_pass    = NULL;
 static vcl_func_f         *vmod_Hook_pipe    = NULL;
 static vcl_func_f         *vmod_Hook_deliver = NULL;
-static vcl_func_f         *vmod_Hook_error   = NULL;
-
-static pthread_mutex_t    vmod_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-//////////////////////////////////////////
-//Debug
-static unsigned           is_debug           = 0;
 
 //////////////////////////////////////////
 //for internal head
@@ -107,9 +100,6 @@ enum VMODREQ_PARSE{URL,MULTI,UNKNOWN};
 
 ssize_t vmod_HTC_Read(struct worker *, struct http_conn *, void *, size_t );
 
-static void vmodreq_headers_free(struct vmod_headers *);
-
-
 const char *vmodreq_header(const struct vrt_ctx *ctx, enum VMODREQ_TYPE , const char *);
 void vmodreq_sethead(const struct vrt_ctx *,struct vmod_request *, enum VMODREQ_TYPE ,const char *, const char *,int);
 struct vmod_headers *vmodreq_getheaders(const struct vrt_ctx *,struct vmod_request *, enum VMODREQ_TYPE );
@@ -119,7 +109,6 @@ void vmodreq_init_cookie(const struct vrt_ctx *,struct vmod_request *);
 void vmodreq_init_get(const struct vrt_ctx *,struct vmod_request *);
 void vmodreq_init_post(const struct vrt_ctx *,struct vmod_request *);
 struct vmod_request *vmodreq_get_raw(const struct vrt_ctx *);
-static void vmodreq_free(struct vmod_request *);
 
 int decodeForm_multipart(const struct vrt_ctx *,char *);
 int vmodreq_get_parse(const struct vrt_ctx *);
