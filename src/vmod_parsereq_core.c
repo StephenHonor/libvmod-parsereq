@@ -27,7 +27,6 @@ static void vmodreq_headers_free(struct vmod_headers *obj){
 }
 
 static void vmodreq_free(struct vmod_request *c) {
-	struct hdr *h, *h2;
 	CHECK_OBJ_NOTNULL(c, VMOD_REQUEST_MAGIC);
 	
 	free(c->raw_post);
