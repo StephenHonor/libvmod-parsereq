@@ -97,9 +97,12 @@ vmod_param(VRT_CTX, VCL_ENUM type ,VCL_STRING header){
 	enum gethdr_e where = vmod_convhdrtype(ctx, type, &ret);
 	if(ret){
 		//headerの値を作る必要がある
-		char tmp[256];
-		gen_hdrtxt(header, tmp, 256);
-		return VRT_GetHdr(ctx,  where, tmp);
+        const struct gethdr_s hdr = {
+            .what = HDR_REQ,
+            .where = where
+        };
+
+		return VRT_GetHdr(ctx, &hdr);
 	}
 
     return vmodreq_header(ctx, vmod_convtype(type) ,header);
