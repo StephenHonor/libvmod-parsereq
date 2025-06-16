@@ -1,4 +1,5 @@
 $Module parseform 3 'Parsereq VMOD'
+$ABI vrt
 
 $Function VOID   init()
 $Function INT    errcode()

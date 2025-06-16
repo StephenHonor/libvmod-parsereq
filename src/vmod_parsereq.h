@@ -1,12 +1,17 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <syslog.h>
+define _GNU_SOURCE
 
-#include "vcl.h"
-#include "vrt.h"
-#include "bin/varnishd/cache.h"
 #include "config.h"
-#include "vcc_if.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <cache/cache_varnishd.h>
+#include "vcl.h"
+#include "vre.h"
+
+#include "vsb.h"
+#include "vtim.h"
+#include "vcc_parseform_if.h"
 #include "vmod_abi.h"
 
 
