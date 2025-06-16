@@ -23,3 +23,11 @@ static pthread_mutex_t    vmod_mutex = PTHREAD_MUTEX_INITIALIZER;
 //////////////////////////////////////////
 //Debug
 static unsigned           is_debug           = 0;
+
+
+static int vmod_Hook_unset_deliver(const struct vrt_ctx *);
+static int vmod_Hook_unset_bereq(const struct vrt_ctx *);
+static int vmod_Hook_unset_error(const struct vrt_ctx *);
+static void vmod_Hook_Miss_opt_post_loopup(const struct vrt_ctx *);
+
+static void vmodreq_headers_free(struct vmod_headers *);
