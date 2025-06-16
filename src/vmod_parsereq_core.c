@@ -52,7 +52,12 @@ struct vmod_request *vmodreq_get_raw(VRT_CTX){
 	const char *tmp;
 	struct vmod_request *c;
 
-	tmp = VRT_GetHdr(ctx, HDR_REQ, POST_REQ_HDR);
+    const struct gethdr_s hdr = {
+        .what = HDR_REQ,
+        .where = POST_REQ_HDR
+    };
+
+	tmp = VRT_GetHdr(ctx, &hdr);
 	
 	if(tmp){
 		c = (struct vmod_request *)atol(tmp);
