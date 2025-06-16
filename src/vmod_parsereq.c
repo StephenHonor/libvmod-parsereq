@@ -79,18 +79,13 @@ vmod_size(VRT_CTX, VCL_ENUM type, VCL_STRING header)
 		char tmp[256];
 		gen_hdrtxt(header, tmp, 256);
 
-		const struct gethdr_s hdr = {
+        const struct gethdr_s hdr = {
             .what = HDR_REQ,
-            .where = where
-            .hdr = header
+            .where = header  // ✅ this is correct now
         };
 
 		const char *val = VRT_GetHdr(ctx, &hdr);
-		if(val){
-			return strlen(VRT_GetHdr(ctx, &hdr));
-		}else{
-			return 0;
-		}
+		return val ? strlen(val) : 0;
 	}else{
 		return vmodreq_headersize(ctx, vmod_convtype(type) ,header);
 	}
