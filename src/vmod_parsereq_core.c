@@ -52,11 +52,12 @@ struct vmod_request *vmodreq_get_raw(VRT_CTX){
 	const char *tmp;
 	struct vmod_request *c;
 
+	unsigned ret = 0;
     enum gethdr_e where = vmod_convhdrtype(ctx, "req", &ret);
     if (ret) {
         const struct gethdr_s hdr = {
             .what = HDR_REQ,
-            .where = gethdr_e
+            .where = where
         };
 
         tmp = VRT_GetHdr(ctx, &hdr);
