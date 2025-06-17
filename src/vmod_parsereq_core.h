@@ -1,4 +1,6 @@
 
+#define POST_REQ_HDR "\024X-VMOD-PARSEREQ-PTR:"
+#define POST_REQ_HDR_NAME "X-VMOD-PARSEREQ-PTR"
 
 //////////////////////////////////////////
 //Compatible use for HTC_Read

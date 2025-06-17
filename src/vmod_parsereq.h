@@ -13,11 +13,6 @@
 #include "vmod_abi.h"
 
 
-#define POST_REQ_HDR "\024X-VMOD-PARSEREQ-PTR:"
-#define POST_REQ_HDR_NAME "X-VMOD-PARSEREQ-PTR"
-
-
-
 //#define DEBUG_HTCREAD
 //#define DEBUG_SYSLOG
 

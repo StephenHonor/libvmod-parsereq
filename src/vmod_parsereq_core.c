@@ -52,16 +52,19 @@ struct vmod_request *vmodreq_get_raw(VRT_CTX){
 	const char *tmp;
 	struct vmod_request *c;
 
-    const struct gethdr_s hdr = {
-        .what = HDR_REQ,
-        .where = POST_REQ_HDR
-    };
+    enum gethdr_e where = vmod_convhdrtype(ctx, type, &ret);
+    if (ret) {
+        const struct gethdr_s hdr = {
+            .what = HDR_REQ,
+            .where = gethdr_e
+        };
 
-	tmp = VRT_GetHdr(ctx, &hdr);
-	
-	if(tmp){
-		c = (struct vmod_request *)atol(tmp);
-		return c;
+        tmp = VRT_GetHdr(ctx, &hdr);
+
+        if(tmp){
+            c = (struct vmod_request *)atol(tmp);
+            return c;
+        }
 	}
 	return NULL;
 }
@@ -69,49 +72,89 @@ struct vmod_request *vmodreq_get_raw(VRT_CTX){
 
 ////////////////////////////////////////////////////
 //各種データ（post,get,cookie）を取得する
-void vmodreq_init_post(VRT_CTX,struct vmod_request *c){
-	if(ctx->htc->pipeline.b == NULL) return;
-	int len = Tlen(ctx->htc->pipeline);
-	c->raw_post = calloc(1, len +1);
-	AN(c->raw_post);
-	c->size_post = len;
-	c->raw_post[len]=0;
-	memcpy(c->raw_post,ctx->htc->pipeline.b,len);
-
+static int
+IterCopyReqBody(void *priv, const void *ptr, ssize_t len)
+{
+    struct vsb *vsb = priv;
+    return VSB_bcat(vsb, ptr, len);
 }
 
-void vmodreq_init_get(VRT_CTX,struct vmod_request *c){
-	
-	const char *url = ctx->http->hd[HTTP_HDR_URL].b;
-	char *sc_q;
-	if(!(sc_q = strchr(url,'?'))) return;
-	sc_q++;
-	int len = strlen(sc_q);
-	c->raw_get = calloc(1, len +1);
-	AN(c->raw_get);
-	c->size_get = len;
+/* POST body initializer for Varnish 7.7 */
+void
+vmodreq_init_post(VRT_CTX, struct vmod_request *c)
+{
+    CHECK_OBJ_NOTNULL(ctx, VRT_CTX_MAGIC);
+    CHECK_OBJ_NOTNULL(ctx->req, REQ_MAGIC);
 
-	c->raw_get[len]=0;
-	memcpy(c->raw_get,sc_q,len);
-	//normalization
-//	if(len>1 && c->raw_get[len-1] =='&')
-//		c->raw_get[len-1] = 0;
+    if (ctx->req->req_body_status != REQ_BODY_CACHED) {
+        VRT_fail(ctx, "POST body not available (not cached)");
+        return;
+    }
+
+    struct vsb *vsb = VSB_new_auto();
+    AN(vsb);
+
+    ssize_t len = VRB_Iterate(ctx->req, IterCopyReqBody, vsb);
+    if (len < 0) {
+        VSB_delete(vsb);
+        VRT_fail(ctx, "Failed to read request body");
+        return;
+    }
+
+    AZ(VSB_finish(vsb));
+
+    c->raw_post = calloc(1, len + 1);
+    AN(c->raw_post);
+    c->size_post = len;
+    memcpy(c->raw_post, VSB_data(vsb), len);
+    c->raw_post[len] = '\0';
+
+    VSB_delete(vsb);
 }
 
-void vmodreq_init_cookie(VRT_CTX,struct vmod_request *c){
+/* GET query string initializer */
+void
+vmodreq_init_get(VRT_CTX, struct vmod_request *c)
+{
+    CHECK_OBJ_NOTNULL(ctx, VRT_CTX_MAGIC);
+    CHECK_OBJ_NOTNULL(ctx->req, REQ_MAGIC);
+
+    const char *url = ctx->req->http->hd[HTTP_HDR_URL].b;
+    if (!url) return;
+
+    const char *sc_q = strchr(url, '?');
+    if (!sc_q || *(sc_q + 1) == '\0') return;
+
+    sc_q++;  // Skip '?'
+    size_t len = strlen(sc_q);
+
+    c->raw_get = calloc(1, len + 1);
+    AN(c->raw_get);
+    c->size_get = len;
+    memcpy(c->raw_get, sc_q, len);
+    c->raw_get[len] = '\0';
+}
+
+/* Cookie header initializer */
+void
+vmodreq_init_cookie(VRT_CTX, struct vmod_request *c)
+{
+    CHECK_OBJ_NOTNULL(ctx, VRT_CTX_MAGIC);
+
     const struct gethdr_s hdr = {
         .what = HDR_REQ,
-        .where = "\007cookie:"
+        .where = "cookie:"
     };
 
-	const char *r = VRT_GetHdr(ctx, &hdr);
-	if(!r) return;
-	int len = strlen(r);
-	c->raw_cookie = calloc(1, len +1);
-	AN(c->raw_cookie);
-	c->size_cookie = len;
-	c->raw_cookie[len]=0;
-	memcpy(c->raw_cookie,r,len);
+    const char *r = VRT_GetHdr(ctx, &hdr);
+    if (!r) return;
+
+    size_t len = strlen(r);
+    c->raw_cookie = calloc(1, len + 1);
+    AN(c->raw_cookie);
+    c->size_cookie = len;
+    memcpy(c->raw_cookie, r, len);
+    c->raw_cookie[len] = '\0';
 }
 
 
